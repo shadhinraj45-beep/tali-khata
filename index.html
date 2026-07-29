@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ডিজিটাল টালি খাতা</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+        body { background-color: #f4f6f9; color: #333; padding: 15px; }
+        .container { max-width: 500px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #1a73e8; margin-bottom: 20px; font-size: 24px; }
+        .summary { display: flex; justify-content: space-between; margin-bottom: 20px; gap: 10px; }
+        .card { flex: 1; padding: 12px; border-radius: 8px; text-align: center; color: white; }
+        .in { background-color: #2e7d32; }
+        .out { background-color: #c62828; }
+        .due { background-color: #ef6c00; }
+        .card h3 { font-size: 14px; margin-bottom: 5px; font-weight: normal; }
+        .card p { font-size: 18px; font-weight: bold; }
+        form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        input, select, button { padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
+        button { background-color: #1a73e8; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background-color: #1557b0; }
+        .history { border-top: 1px solid #eee; padding-top: 15px; }
+        .history h2 { font-size: 18px; margin-bottom: 10px; color: #555; }
+        ul { list-style: none; }
+        li { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }
+        .type-জমা { color: #2e7d32; font-weight: bold; }
+        .type-খরচ { color: #c62828; font-weight: bold; }
+        .type-বাকি { color: #ef6c00; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>ডিজিটাল টালি খাতা</h1>
+    
+    <div class="summary">
+        <div class="card in">
+            <h3>মোট জমা</h3>
+            <p>৳ <span id="totalIn">০</span></p>
+        </div>
+        <div class="card out">
+            <h3>মোট খরচ</h3>
+            <p>৳ <span id="totalOut">০</span></p>
+        </div>
+        <div class="card due">
+            <h3>মোট বাকি</h3>
+            <p>৳ <span id="totalDue">০</span></p>
+        </div>
+    </div>
+
+    <form id="tallyForm">
+        <input type="text" id="desc" placeholder="বিবরণ / কাস্টমারের নাম" required>
+        <input type="number" id="amount" placeholder="টাকার পরিমাণ (৳)" required>
+        <select id="type">
+            <option value="জমা">জমা</option>
+            <option value="খরচ">খরচ</option>
+            <option value="বাকি">বাকি</option>
+        </select>
+        <button type="submit">এন্ট্রি যোগ করুন</button>
+    </form>
+
+    <div class="history">
+        <h2>হিসাবের তালিকা</h2>
+        <ul id="list"></ul>
+    </div>
+</div>
+
+<script>
+    let entries = JSON.parse(localStorage.getItem('tallyEntries')) || [];
+
+    function updateUI() {
+        const list = document.getElementById('list');
+        list.innerHTML = '';
+        
+        let inAmt = 0, outAmt = 0, dueAmt = 0;
+
+        entries.forEach((item, index) => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span><strong>${item.desc}</strong> (${item.type})</span>
+                <span class="type-${item.type}">৳ ${item.amount}</span>
+            `;
+            list.appendChild(li);
+
+            if(item.type === 'জমা') inAmt += item.amount;
+            if(item.type === 'খরচ') outAmt += item.amount;
+            if(item.type === 'বাকি') dueAmt += item.amount;
+        });
+
+        document.getElementById('totalIn').innerText = inAmt;
+        document.getElementById('totalOut').innerText = outAmt;
+        document.getElementById('totalDue').innerText = dueAmt;
+
+        localStorage.setItem('tallyEntries', JSON.stringify(entries));
+    }
+
+    document.getElementById('tallyForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const desc = document.getElementById('desc').value;
+        const amount = parseFloat(document.getElementById('amount').value);
+        const type = document.getElementById('type').value;
+
+        entries.push({ desc, amount, type });
+        updateUI();
+
+        document.getElementById('desc').value = '';
+        document.getElementById('amount').value = '';
+    });
+
+    updateUI();
+</script>
+
+</body>
+</html>
