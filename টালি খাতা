@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ডিজিটাল টালি খাতা</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #2c3e50;
+            border-bottom: 2px solid #27ae60;
+            padding-bottom: 10px;
+        }
+        .add-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="text"], input[type="number"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            flex: 1;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+        }
+        .btn-add { background-color: #27ae60; }
+        .btn-add:hover { background-color: #219150; }
+        
+        .btn-jama { background-color: #3498db; }
+        .btn-baki { background-color: #e74c3c; }
+        .btn-edit { background-color: #f39c12; }
+        .btn-delete { background-color: #95a5a6; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th { background-color: #2c3e50; color: white; }
+        .positive { color: #27ae60; font-weight: bold; }
+        .negative { color: #e74c3c; font-weight: bold; }
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📓 আমার টালি খাতা</h2>
+    
+    <div class="add-section">
+        <input type="text" id="customerName" placeholder="গ্রাহকের নাম লিখুন...">
+        <button class="btn-add" onclick="addCustomer()">+ নতুন গ্রাহক যোগ করুন</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>গ্রাহকের নাম</th>
+                <th>মোট হিসাব (৳)</th>
+                <th>লেনদেন (+/-)</th>
+                <th>অন্যান্য</th>
+            </tr>
+        </thead>
+        <tbody id="customerList">
+            <!-- Data will be loaded here -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // LocalStorage থেকে ডেটা পড়া
+    let customers = JSON.parse(localStorage.getItem('tallyKhataData')) || {};
+
+    // ডেটা সেভ করা
+    function saveData() {
+        localStorage.setItem('tallyKhataData', JSON.stringify(customers));
+        renderTable();
+    }
+
+    // নতুন গ্রাহক যোগ করা
+    function addCustomer() {
+        let nameInput = document.getElementById('customerName');
+        let name = nameInput.value.trim();
+        
+        if (name === "") {
+            alert("দয়া করে গ্রাহকের নাম লিখুন!");
+            return;
+        }
+        if (customers[name] !== undefined) {
+            alert("এই নামের গ্রাহক ইতিমধ্যেই আছে!");
+            return;
+        }
+
+        customers[name] = 0; // নতুন গ্রাহকের ব্যালেন্স ০
+        nameInput.value = "";
+        saveData();
+    }
+
+    // লেনদেন যোগ করা (+ জমা / - বাকি)
+    function addTransaction(name, isJama) {
+        let actionStr = isJama ? "জমা (+)" : "বাকি (-)";
+        let amountStr = prompt(name + "-এর কত টাকা " + actionStr + " করবেন?");
+        
+        if (amountStr === null || amountStr.trim() === "") return;
+        
+        let amount = parseFloat(amountStr);
+        if (isNaN(amount) || amount <= 0) {
+            alert("দয়া করে সঠিক টাকার পরিমাণ লিখুন!");
+            return;
+        }
+
+        if (isJama) {
+            customers[name] += amount; // জমা হলে যোগ (+)
+        } else {
+            customers[name] -= amount; // বাকি বা খরচ হলে বিয়োগ (-)
+        }
+        saveData();
+    }
+
+    // হিসাব এডিট করা
+    function editCustomer(oldName) {
+        let newName = prompt("গ্রাহকের নতুন নাম লিখুন:", oldName);
+        if (newName === null || newName.trim() === "") return;
+        newName = newName.trim();
+
+        let newBalanceStr = prompt(newName + "-এর বর্তমান মোট ব্যালেন্স কত হবে?", customers[oldName]);
+        if (newBalanceStr === null || newBalanceStr.trim() === "") return;
+        
+        let newBalance = parseFloat(newBalanceStr);
+        if (isNaN(newBalance)) {
+            alert("সঠিক সংখ্যা লিখুন!");
+            return;
+        }
+
+        // নাম পরিবর্তন হলে পুরনো ডেটা মুছে নতুন নামে সেভ করা
+        if (newName !== oldName) {
+            delete customers[oldName];
+        }
+        customers[newName] = newBalance;
+        saveData();
+    }
+
+    // গ্রাহক ডিলিট করা
+    function deleteCustomer(name) {
+        if (confirm("আপনি কি নিশ্চিত যে " + name + "-এর হিসাব মুছে ফেলতে চান?")) {
+            delete customers[name];
+            saveData();
+        }
+    }
+
+    // টেবিল আপডেট করা
+    function renderTable() {
+        let tbody = document.getElementById('customerList');
+        tbody.innerHTML = "";
+
+        for (let name in customers) {
+            let balance = customers[name];
+            let balanceClass = balance >= 0 ? 'positive' : 'negative';
+            let balanceText = balance >= 0 ? balance + " (পাবেন/জমা)" : Math.abs(balance) + " (দিতে হবে/বাকি)";
+
+            let tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${name}</strong></td>
+                <td class="${balanceClass}">৳ ${balanceText}</td>
+                <td class="action-buttons">
+                    <button class="btn-jama" onclick="addTransaction('${name}', true)">+ জমা</button>
+                    <button class="btn-baki" onclick="addTransaction('${name}', false)">- বাকি</button>
+                </td>
+                <td class="action-buttons">
+                    <button class="btn-edit" onclick="editCustomer('${name}')">এডিট</button>
+                    <button class="btn-delete" onclick="deleteCustomer('${name}')">মুছুন</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
+    }
+
+    // পেজ লোড হওয়ার সাথে সাথে টেবিল দেখানো
+    renderTable();
+</script>
+
+</body>
+</html>
